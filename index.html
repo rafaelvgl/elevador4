@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Elevador 4 — Açúcar | Manutenção Corretiva</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -11,15 +11,16 @@
     :root {
       --bg: #0f172a; --surface: #1e293b; --border: #334155; --border2: #475569;
       --text: #f1f5f9; --text2: #94a3b8; --text3: #64748b;
-      --accent: #f59e0b; --green: #10b981; --radius: 8px;
+      --accent: #f59e0b; --green: #10b981; --red: #ef4444;
+      --orange: #f97316; --radius: 8px;
     }
     body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
 
+    /* SYNC BAR */
     #sync-bar {
       position: fixed; top: 0; left: 0; right: 0; z-index: 999;
       padding: 5px 16px; font-size: 12px; font-weight: 600;
-      display: flex; align-items: center; gap: 8px;
-      transition: opacity .5s;
+      display: flex; align-items: center; gap: 8px; transition: opacity .5s;
     }
     #sync-bar.conectando { background: #1e3a5f; color: #60a5fa; }
     #sync-bar.ok         { background: #064e3b; color: #34d399; }
@@ -29,6 +30,7 @@
     .pulse { animation: pulse 1s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 
+    /* HEADER */
     .header {
       background: var(--surface); border-bottom: 2px solid var(--accent);
       padding: 28px 24px 16px; position: sticky; top: 0; z-index: 100;
@@ -36,18 +38,44 @@
     .header-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
     .label-top { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 3px; }
     h1 { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.1; }
-    .subtitle { font-size: 12px; color: var(--text3); margin-top: 5px; }
 
+    /* TERMINO DINÂMICO */
+    .timing-row {
+      display: flex; flex-wrap: wrap; gap: 16px; margin-top: 6px; font-size: 12px; color: var(--text3);
+    }
+    .timing-item { display: flex; align-items: center; gap: 5px; }
+    .timing-item .lbl { color: var(--text3); }
+    .timing-item .val { color: var(--text2); font-weight: 500; }
+    .timing-item .val.atrasado { color: var(--red); font-weight: 700; }
+    .timing-item .val.no-prazo { color: var(--green); font-weight: 700; }
+
+    /* ATRASO BADGE */
+    .atraso-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(239,68,68,.15); color: var(--red);
+      border: 1px solid rgba(239,68,68,.35);
+      border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700;
+    }
+    .adiantado-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(16,185,129,.15); color: var(--green);
+      border: 1px solid rgba(16,185,129,.35);
+      border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700;
+    }
+
+    /* STAT CARDS */
     .stat-cards { display: flex; gap: 8px; flex-wrap: wrap; }
     .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; text-align: center; min-width: 80px; }
-    .stat-card .num { font-size: 24px; font-weight: 700; line-height: 1; }
+    .stat-card .num { font-size: 22px; font-weight: 700; line-height: 1; }
     .stat-card .lbl { font-size: 10px; color: var(--text3); margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }
 
+    /* PROGRESS */
     .progress-wrap { display: flex; align-items: center; gap: 10px; }
     .progress-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
     .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width .5s ease; }
     .progress-pct { font-size: 13px; font-weight: 700; min-width: 36px; text-align: right; }
 
+    /* PDF BUTTON */
     .btn-pdf {
       display: flex; align-items: center; gap: 6px;
       background: var(--accent); color: #000; border: none;
@@ -60,6 +88,7 @@
 
     main { padding: 20px 24px; max-width: 960px; margin: 0 auto; }
 
+    /* ACTIVITY CARD */
     .act-card {
       background: var(--surface); border: 1px solid var(--border);
       border-left: 4px solid var(--border2); border-radius: var(--radius);
@@ -68,6 +97,7 @@
     }
     .act-card.andamento { border-left-color: var(--accent); border-color: var(--accent); }
     .act-card.concluida { border-left-color: var(--green); border-color: var(--green); }
+    .act-card.atrasada  { border-left-color: var(--red); }
     .act-progress-bg { position: absolute; top:0; left:0; height:100%; background: rgba(245,158,11,.04); transition: width .4s; pointer-events:none; }
     .act-card.concluida .act-progress-bg { background: rgba(16,185,129,.05); }
 
@@ -77,7 +107,8 @@
 
     .act-num { font-size: 18px; font-weight: 800; color: var(--text3); min-width: 24px; }
     .act-name { font-size: 14px; font-weight: 600; color: var(--text); }
-    .act-meta { font-size: 11px; color: var(--text3); margin: 4px 0 6px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .act-meta { font-size: 11px; color: var(--text3); margin: 4px 0 3px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .act-meta-prev { font-size: 10px; color: var(--text3); margin-bottom: 5px; opacity: .7; }
 
     .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; }
     .badge-nr12 { background: #1d4ed822; color: #60a5fa; border: 1px solid #3b82f644; }
@@ -133,10 +164,26 @@
 
 <div class="header">
   <div class="header-top">
-    <div>
+    <div style="flex:1;min-width:0;">
       <div class="label-top">Manutenção Corretiva</div>
       <h1>Elevador 4 — Açúcar</h1>
-      <div class="subtitle" id="periodo"></div>
+      <div class="timing-row" id="timing-row">
+        <div class="timing-item">
+          <span class="lbl">Início:</span>
+          <span class="val" id="t-inicio">—</span>
+        </div>
+        <div class="timing-item">
+          <span class="lbl">Término original:</span>
+          <span class="val" id="t-original">—</span>
+        </div>
+        <div class="timing-item">
+          <span class="lbl">⏱ Término estimado:</span>
+          <span class="val" id="t-estimado">—</span>
+        </div>
+        <div class="timing-item" id="t-delta-wrap" style="display:none;">
+          <span id="t-delta"></span>
+        </div>
+      </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
       <div class="stat-cards">
@@ -153,8 +200,13 @@
           <div class="lbl">Andamento</div>
         </div>
         <div class="stat-card">
-          <div class="num" style="color:var(--text);">21h</div>
-          <div class="lbl">Total prev.</div>
+          <div class="num" id="stat-restante" style="color:var(--text);">21h</div>
+          <div class="lbl">Restante</div>
+        </div>
+        <div class="stat-card" style="min-width:110px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);line-height:1.1;" id="stat-termino-dia">—</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text);line-height:1.2;margin-top:1px;" id="stat-termino-hora">—</div>
+          <div class="lbl">Término estimado</div>
         </div>
       </div>
       <button class="btn-pdf" onclick="gerarPDF()">
@@ -178,12 +230,11 @@
 </div>
 
 <main><div id="lista"></div></main>
-
 <footer>Elevador 4 de Açúcar &nbsp;|&nbsp; Manutenção Corretiva</footer>
 
 <script type="module">
-  import { initializeApp }                      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, update }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { initializeApp }                     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey:            "AIzaSyASfd4sEHo3sLQIav1mWeMYA6qTeXeYf74",
@@ -195,12 +246,12 @@
     appId:             "1:565787417264:web:0a550d3f6411a3731d3975"
   };
 
-  const app   = initializeApp(firebaseConfig);
-  const db    = getDatabase(app);
-  const dbRef = ref(db, "elevador4/atividades");
+  const app    = initializeApp(firebaseConfig);
+  const db     = getDatabase(app);
+  const dbRef  = ref(db, "elevador4/atividades");
 
-  const INICIO_MS = new Date("2026-05-16T09:00:00-03:00").getTime();
-  const TOTAL_H   = 21;
+  const INICIO_PREV_MS = new Date("2026-05-16T09:00:00-03:00").getTime();
+  const TOTAL_H = 21;
 
   const ATIVS = [
     {id:1,  nome:"Lavagem geral e descaracterização de área classificada", dur:1,   nr:["NR-12"]},
@@ -221,17 +272,25 @@
     {id:16, nome:"Teste operacional",                                      dur:1,   nr:[]},
   ];
 
-  let cursor = INICIO_MS;
+  // Horários originais (previstos)
+  let cur = INICIO_PREV_MS;
   ATIVS.forEach(a => {
-    a.ini = new Date(cursor);
-    cursor += a.dur * 3600000;
-    a.fim = new Date(cursor);
+    a.ini_prev = new Date(cur);
+    cur += a.dur * 3600000;
+    a.fim_prev = new Date(cur);
   });
-  const FIM_PREV = new Date(cursor);
+  const FIM_ORIGINAL_MS = cur;
 
+  // ── HELPERS ───────────────────────────────────────────────────
   const fmtH   = d => new Date(d).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  const fmtDH  = d => new Date(d).toLocaleString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(",","");
   const fmtDT  = d => new Date(d).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(",","");
   const fmtDur = h => h === Math.round(h) ? h+"h" : (h+"").replace(".",",")+"h";
+  const fmtMin = m => {
+    if (m < 60) return `${m}min`;
+    const h = Math.floor(m/60), mn = m%60;
+    return mn ? `${h}h${mn}min` : `${h}h`;
+  };
 
   const NR_BADGE = {
     "NR-12": '<span class="badge badge-nr12">NR-12</span>',
@@ -239,24 +298,119 @@
     "LOTO":  '<span class="badge badge-loto">🔒 LOTO</span>',
   };
 
+  // ── STATE ─────────────────────────────────────────────────────
   let state = {};
-  ATIVS.forEach(a => { state[a.id] = {pct:0, st:"pendente", obs:"", ini_real:null, fim_real:null}; });
+  ATIVS.forEach(a => { state[a.id] = {pct:0,st:"pendente",obs:"",ini_real:null,fim_real:null}; });
 
+  // ── CÁLCULO DE TÉRMINO ESTIMADO ───────────────────────────────
+  // Lógica: hora_atual + soma das durações das tarefas ainda não 100% concluídas
+  // Tarefas concluídas não contam. Tarefa em andamento conta proporcionalmente ao que falta.
+  function calcTerminoEstimado() {
+    const agora = Date.now();
+    let horasRestantes = 0;
+
+    ATIVS.forEach(a => {
+      const s = state[a.id];
+      if (s.st === "concluida") return; // já terminou, não conta
+      const fracaoRestante = 1 - (s.pct / 100);
+      horasRestantes += a.dur * fracaoRestante;
+    });
+
+    return agora + horasRestantes * 3600000;
+  }
+
+  function calcHorasRestantes() {
+    let h = 0;
+    ATIVS.forEach(a => {
+      const s = state[a.id];
+      if (s.st === "concluida") return;
+      h += a.dur * (1 - s.pct / 100);
+    });
+    return h;
+  }
+
+  // ── STATS + TIMING ────────────────────────────────────────────
+  function calcGeral() {
+    let peso = 0;
+    ATIVS.forEach(a => peso += (state[a.id].pct / 100) * a.dur);
+    return Math.round((peso / TOTAL_H) * 100);
+  }
+
+  function atualizarTiming() {
+    const estimado   = calcTerminoEstimado();
+    const deltaMs    = estimado - FIM_ORIGINAL_MS;
+    const deltaMin   = Math.round(deltaMs / 60000);
+    const horasRest  = calcHorasRestantes();
+    const restMin    = Math.round(horasRest * 60);
+
+    document.getElementById("t-inicio").textContent   = fmtDH(INICIO_PREV_MS);
+    document.getElementById("t-original").textContent = fmtDH(FIM_ORIGINAL_MS);
+
+    const elEst = document.getElementById("t-estimado");
+    elEst.textContent = fmtDH(estimado);
+
+    // Cor do estimado
+    if (Math.abs(deltaMin) <= 10) {
+      elEst.className = "val no-prazo";
+    } else if (deltaMin > 0) {
+      elEst.className = "val atrasado";
+    } else {
+      elEst.className = "val no-prazo";
+    }
+
+    // Badge de atraso / adiantamento
+    const wrap = document.getElementById("t-delta-wrap");
+    const el   = document.getElementById("t-delta");
+    if (Math.abs(deltaMin) <= 10) {
+      wrap.style.display = "none";
+    } else {
+      wrap.style.display = "flex";
+      if (deltaMin > 0) {
+        el.innerHTML = `<span class="atraso-badge">⚠ ${fmtMin(deltaMin)} de atraso</span>`;
+      } else {
+        el.innerHTML = `<span class="adiantado-badge">✔ ${fmtMin(Math.abs(deltaMin))} adiantado</span>`;
+      }
+    }
+
+    // Restante no card
+    // Card de término estimado no cabeçalho
+    const estDate = new Date(estimado);
+    const diaSemana = estDate.toLocaleDateString("pt-BR",{weekday:"short"});
+    const diaMes = estDate.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+    const horaEst = fmtH(estimado);
+    const corTermino = deltaMin > 10 ? "var(--red)" : "var(--green)";
+    document.getElementById("stat-termino-dia").textContent = diaSemana + " " + diaMes;
+    const elHora = document.getElementById("stat-termino-hora");
+    elHora.textContent = horaEst;
+    elHora.style.color = corTermino;
+    document.getElementById("stat-restante").textContent =
+      restMin >= 60 ? fmtDur(Math.round(horasRest * 2) / 2) : restMin+"min";
+  }
+
+  function atualizarStats() {
+    const g = calcGeral();
+    document.getElementById("stat-geral").textContent  = g+"%";
+    document.getElementById("stat-ok").textContent     = ATIVS.filter(a=>state[a.id].st==="concluida").length;
+    document.getElementById("stat-and").textContent    = ATIVS.filter(a=>state[a.id].st==="andamento").length;
+    document.getElementById("barra-geral").style.width = g+"%";
+    document.getElementById("barra-pct").textContent   = g+"%";
+    document.getElementById("stat-geral").style.color  = g >= 80 ? "var(--green)" : "var(--accent)";
+    atualizarTiming();
+  }
+
+  // ── FIREBASE SYNC ─────────────────────────────────────────────
   let syncTimer   = null;
   let fromFirebase = false;
 
-  // ── SYNC BAR ────────────────────────────────────────────────
   function setSyncBar(tipo, msg) {
     const bar = document.getElementById("sync-bar");
-    const dot = bar.querySelector(".sync-dot");
     bar.className = tipo;
-    dot.className = "sync-dot" + (tipo !== "ok" ? " pulse" : "");
+    bar.querySelector(".sync-dot").className = "sync-dot" + (tipo !== "ok" ? " pulse" : "");
     document.getElementById("sync-msg").textContent = msg;
     bar.style.opacity = "1";
     if (tipo === "ok") setTimeout(() => { bar.style.opacity = "0"; }, 2000);
   }
 
-  // ── FIREBASE: ESCUTAR MUDANÇAS ───────────────────────────────
   onValue(dbRef, snap => {
     const data = snap.val();
     if (data) {
@@ -278,11 +432,10 @@
     setSyncBar("ok", "Sincronizado ✔");
     render();
   }, err => {
-    setSyncBar("erro", "Sem conexão — exibindo dados locais");
+    setSyncBar("erro", "Sem conexão — dados locais");
     console.error(err);
   });
 
-  // ── FIREBASE: SALVAR ─────────────────────────────────────────
   function salvar(id) {
     if (fromFirebase) return;
     setSyncBar("salvando", "Salvando...");
@@ -294,40 +447,29 @@
         pct:      s.pct,
         st:       s.st,
         obs:      s.obs,
-        ini_real: s.ini_real ? new Date(s.ini_real).getTime() : null,
-        fim_real: s.fim_real ? new Date(s.fim_real).getTime() : null,
+        ini_real: s.ini_real ?? null,
+        fim_real: s.fim_real ?? null,
       };
       update(ref(db), patch)
         .then(()  => setSyncBar("ok", "Salvo ✔"))
-        .catch(() => setSyncBar("erro", "Falha ao salvar — verifique conexão"));
+        .catch(() => setSyncBar("erro", "Falha ao salvar"));
     }, 700);
   }
 
-  // ── STATS ────────────────────────────────────────────────────
-  function calcGeral() {
-    let peso = 0;
-    ATIVS.forEach(a => peso += (state[a.id].pct / 100) * a.dur);
-    return Math.round((peso / TOTAL_H) * 100);
-  }
-  function atualizarStats() {
-    const g = calcGeral();
-    document.getElementById("stat-geral").textContent  = g+"%";
-    document.getElementById("stat-ok").textContent     = ATIVS.filter(a=>state[a.id].st==="concluida").length;
-    document.getElementById("stat-and").textContent    = ATIVS.filter(a=>state[a.id].st==="andamento").length;
-    document.getElementById("barra-geral").style.width = g+"%";
-    document.getElementById("barra-pct").textContent   = g+"%";
-    document.getElementById("stat-geral").style.color  = g >= 80 ? "var(--green)" : "var(--accent)";
-  }
-
-  // ── RENDER ───────────────────────────────────────────────────
+  // ── RENDER ────────────────────────────────────────────────────
   function render() {
+    const agora = Date.now();
     let html = "";
     ATIVS.forEach(a => {
-      const s    = state[a.id];
-      const cls  = s.st==="concluida" ? "concluida" : s.st==="andamento" ? "andamento" : "";
-      const pct  = s.pct;
-      const barC = s.st==="concluida" ? "var(--green)" : "var(--accent)";
-      const bdgs = a.nr.map(n => NR_BADGE[n]||"").join(" ");
+      const s     = state[a.id];
+      const cls   = s.st==="concluida" ? "concluida" : s.st==="andamento" ? "andamento" : "";
+      const pct   = s.pct;
+      const barC  = s.st==="concluida" ? "var(--green)" : "var(--accent)";
+      const bdgs  = a.nr.map(n => NR_BADGE[n]||"").join(" ");
+
+      // Detecta tarefa em atraso: pendente/andamento e horário previsto de fim já passou
+      const atrasada = s.st !== "concluida" && a.fim_prev.getTime() < agora;
+      const cardCls  = atrasada ? cls + " atrasada" : cls;
 
       let btn = "";
       if (s.st==="pendente")  btn = `<button class="btn-iniciar"  onclick="_ini(${a.id})">▶ Iniciar</button>`;
@@ -338,17 +480,26 @@
         ? `<div class="act-real">⏱ Início real: ${fmtH(s.ini_real)}${s.fim_real?" &nbsp;|&nbsp; Fim real: "+fmtH(s.fim_real):""}</div>`
         : "";
 
+      // Atraso individual da tarefa
+      let atrasoBadge = "";
+      if (atrasada) {
+        const minAtr = Math.round((agora - a.fim_prev.getTime()) / 60000);
+        atrasoBadge = `<span class="atraso-badge">⚠ ${fmtMin(minAtr)} atraso</span>`;
+      }
+
       html += `
-      <div class="act-card ${cls}">
+      <div class="act-card ${cardCls}">
         <div class="act-progress-bg" style="width:${pct}%;"></div>
         <div class="act-inner">
           <div class="act-left">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
               <span class="act-num">${String(a.id).padStart(2,"0")}</span>
               <span class="act-name">${a.nome}</span>
+              ${atrasoBadge}
             </div>
             <div class="act-meta">
-              <span>${fmtH(a.ini)} → ${fmtH(a.fim)} &nbsp;(${fmtDur(a.dur)})</span>${bdgs}
+              <span>Prev: ${fmtH(a.ini_prev)} → ${fmtH(a.fim_prev)} &nbsp;(${fmtDur(a.dur)})</span>
+              ${bdgs}
             </div>
             ${real}
             <textarea class="act-obs" rows="1" placeholder="Observações / ocorrências..."
@@ -375,7 +526,7 @@
     atualizarStats();
   }
 
-  // ── AÇÕES ────────────────────────────────────────────────────
+  // ── AÇÕES ─────────────────────────────────────────────────────
   window._pct = (id, v) => {
     state[id].pct = v;
     if (v > 0 && state[id].st==="pendente") state[id].st = "andamento";
@@ -395,37 +546,44 @@
     salvar(id); render();
   };
 
-  // ── PDF ──────────────────────────────────────────────────────
+  // ── PDF ───────────────────────────────────────────────────────
   window.gerarPDF = () => {
-    if (!window.jspdf?.jsPDF) { alert("Aguarde a biblioteca PDF carregar e tente novamente."); return; }
+    if (!window.jspdf?.jsPDF) { alert("Aguarde a biblioteca PDF carregar."); return; }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
     const now = new Date();
     const g   = calcGeral();
     const ok  = ATIVS.filter(a=>state[a.id].st==="concluida").length;
+    const est = calcTerminoEstimado();
     const ST  = {pendente:"Pendente",andamento:"Em andamento",concluida:"Concluída"};
 
     doc.setFillColor(20,58,92);
-    doc.rect(0,0,297,36,"F");
+    doc.rect(0,0,297,40,"F");
     doc.setTextColor(255,255,255);
     doc.setFontSize(8);
     doc.text("COMUNICADO PARCIAL DE MANUTENÇÃO",14,8);
     doc.setFontSize(18); doc.setFont(undefined,"bold");
     doc.text("Elevador 4 — Açúcar",14,18);
     doc.setFont(undefined,"normal"); doc.setFontSize(8);
-    doc.text(`Emitido em: ${fmtDT(now)}   |   Início previsto: ${fmtDT(new Date(INICIO_MS))}   |   Término previsto: ${fmtDT(FIM_PREV)}   |   Total: ${TOTAL_H}h`,14,25);
+    doc.text(`Emitido em: ${fmtDT(now)}   |   Início previsto: ${fmtDT(new Date(INICIO_PREV_MS))}   |   Término original: ${fmtDT(new Date(FIM_ORIGINAL_MS))}   |   Total: ${TOTAL_H}h`,14,25);
+    doc.setFontSize(9);
+    // Término estimado com destaque
+    const deltaMin = Math.round((est - FIM_ORIGINAL_MS) / 60000);
+    const deltaStr = deltaMin > 10 ? `  ⚠ ${fmtMin(deltaMin)} de atraso` : deltaMin < -10 ? `  ✔ ${fmtMin(Math.abs(deltaMin))} adiantado` : "  ✔ no prazo";
+    doc.text(`Término estimado: ${fmtDT(new Date(est))}${deltaStr}`,14,31);
     doc.setFontSize(11); doc.setFont(undefined,"bold");
-    doc.text(`Avanço geral: ${g}%   |   Concluídas: ${ok} de ${ATIVS.length}`,14,33);
+    doc.text(`Avanço geral: ${g}%   |   Concluídas: ${ok} de ${ATIVS.length}`,14,38);
     doc.setFont(undefined,"normal");
 
     doc.autoTable({
-      startY: 40,
+      startY: 44,
       head: [["#","Atividade","Dur.","Prev.","Status","Avanço","Ini. real","Fim real","NR / LOTO","Observações"]],
       body: ATIVS.map(a => {
         const s = state[a.id];
         return [
           String(a.id).padStart(2,"0"), a.nome, fmtDur(a.dur),
-          `${fmtH(a.ini)} – ${fmtH(a.fim)}`, ST[s.st], s.pct+"%",
+          `${fmtH(a.ini_prev)} – ${fmtH(a.fim_prev)}`,
+          ST[s.st], s.pct+"%",
           s.ini_real ? fmtH(s.ini_real) : "—",
           s.fim_real ? fmtH(s.fim_real) : "—",
           a.nr.join(", ")||"—", s.obs||"—",
@@ -435,10 +593,10 @@
       headStyles:{fillColor:[20,58,92],textColor:255,fontStyle:"bold",fontSize:8},
       alternateRowStyles:{fillColor:[245,248,252]},
       columnStyles:{
-        0:{cellWidth:8,halign:"center"},1:{cellWidth:62},2:{cellWidth:10,halign:"center"},
+        0:{cellWidth:8,halign:"center"},1:{cellWidth:60},2:{cellWidth:10,halign:"center"},
         3:{cellWidth:22},4:{cellWidth:24},5:{cellWidth:14,halign:"center"},
         6:{cellWidth:16,halign:"center"},7:{cellWidth:16,halign:"center"},
-        8:{cellWidth:20},9:{cellWidth:40},
+        8:{cellWidth:20},9:{cellWidth:42},
       },
       didParseCell(d) {
         if (d.section==="body" && d.column.index===4) {
@@ -454,12 +612,10 @@
     doc.save(`Elevador4_Comunicado_${now.toLocaleDateString("pt-BR").replace(/\//g,"-")}_${fmtH(now).replace(":","h")}.pdf`);
   };
 
-  // ── INIT ─────────────────────────────────────────────────────
-  document.getElementById("periodo").textContent =
-    "Início: " + new Date(INICIO_MS).toLocaleString("pt-BR",{weekday:"long",day:"2-digit",month:"long"}) +
-    " às " + fmtH(INICIO_MS) + " — Término previsto: " + fmtH(FIM_PREV.getTime()) +
-    " (" + FIM_PREV.toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}) + ")";
+  // ── TICK A CADA MINUTO (atualiza término estimado) ────────────
+  setInterval(() => { atualizarStats(); }, 60000);
 
+  // ── INIT ──────────────────────────────────────────────────────
   setSyncBar("conectando","Conectando ao banco de dados...");
   render();
 </script>
