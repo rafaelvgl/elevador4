@@ -8,318 +8,133 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --surface2: #253347;
-      --border: #334155;
-      --border2: #475569;
-      --text: #f1f5f9;
-      --text2: #94a3b8;
-      --text3: #64748b;
-      --accent: #f59e0b;
-      --green: #10b981;
-      --red: #ef4444;
-      --blue: #3b82f6;
-      --orange: #f97316;
-      --radius: 8px;
-      --radius-lg: 12px;
+      --bg: #0f172a; --surface: #1e293b; --border: #334155; --border2: #475569;
+      --text: #f1f5f9; --text2: #94a3b8; --text3: #64748b;
+      --accent: #f59e0b; --green: #10b981; --radius: 8px;
     }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      font-size: 14px;
-      min-height: 100vh;
+    #sync-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      padding: 5px 16px; font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+      transition: opacity .5s;
     }
+    #sync-bar.conectando { background: #1e3a5f; color: #60a5fa; }
+    #sync-bar.ok         { background: #064e3b; color: #34d399; }
+    #sync-bar.erro       { background: #7f1d1d; color: #fca5a5; }
+    #sync-bar.salvando   { background: #78350f; color: #fcd34d; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .pulse { animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-    /* HEADER */
     .header {
-      background: var(--surface);
-      border-bottom: 2px solid var(--accent);
-      padding: 20px 24px 16px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      background: var(--surface); border-bottom: 2px solid var(--accent);
+      padding: 28px 24px 16px; position: sticky; top: 0; z-index: 100;
     }
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .header-title-block .label {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--accent);
-      letter-spacing: .15em;
-      text-transform: uppercase;
-      margin-bottom: 3px;
-    }
-    .header-title-block h1 {
-      font-size: 26px;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1.1;
-    }
-    .header-title-block .subtitle {
-      font-size: 12px;
-      color: var(--text3);
-      margin-top: 5px;
-    }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+    .label-top { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 3px; }
+    h1 { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.1; }
+    .subtitle { font-size: 12px; color: var(--text3); margin-top: 5px; }
 
-    /* STAT CARDS */
-    .stat-cards {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .stat-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px 14px;
-      text-align: center;
-      min-width: 80px;
-    }
-    .stat-card .num {
-      font-size: 24px;
-      font-weight: 700;
-      line-height: 1;
-    }
-    .stat-card .lbl {
-      font-size: 10px;
-      color: var(--text3);
-      margin-top: 2px;
-      text-transform: uppercase;
-      letter-spacing: .05em;
-    }
+    .stat-cards { display: flex; gap: 8px; flex-wrap: wrap; }
+    .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; text-align: center; min-width: 80px; }
+    .stat-card .num { font-size: 24px; font-weight: 700; line-height: 1; }
+    .stat-card .lbl { font-size: 10px; color: var(--text3); margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }
 
-    /* PROGRESS BAR */
-    .progress-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .progress-track {
-      flex: 1;
-      height: 8px;
-      background: var(--border);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      border-radius: 4px;
-      background: linear-gradient(90deg, var(--accent), var(--green));
-      transition: width .5s ease;
-    }
-    .progress-pct {
-      font-size: 13px;
-      font-weight: 700;
-      min-width: 36px;
-      text-align: right;
-    }
+    .progress-wrap { display: flex; align-items: center; gap: 10px; }
+    .progress-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width .5s ease; }
+    .progress-pct { font-size: 13px; font-weight: 700; min-width: 36px; text-align: right; }
 
-    /* BUTTON */
     .btn-pdf {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--accent);
-      color: #000;
-      border: none;
-      border-radius: var(--radius);
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: filter .15s, transform .1s;
+      display: flex; align-items: center; gap: 6px;
+      background: var(--accent); color: #000; border: none;
+      border-radius: var(--radius); padding: 8px 16px;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: filter .15s, transform .1s;
     }
     .btn-pdf:hover { filter: brightness(1.12); }
     .btn-pdf:active { transform: scale(.97); }
     .btn-pdf svg { width: 16px; height: 16px; }
 
-    /* MAIN */
-    main {
-      padding: 20px 24px;
-      max-width: 960px;
-      margin: 0 auto;
-    }
+    main { padding: 20px 24px; max-width: 960px; margin: 0 auto; }
 
-    /* ACTIVITY CARD */
     .act-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--border2);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      transition: border-color .3s;
-      position: relative;
-      overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 4px solid var(--border2); border-radius: var(--radius);
+      padding: 12px 14px; margin-bottom: 8px; transition: border-color .3s;
+      position: relative; overflow: hidden;
     }
     .act-card.andamento { border-left-color: var(--accent); border-color: var(--accent); }
     .act-card.concluida { border-left-color: var(--green); border-color: var(--green); }
-
-    .act-progress-bg {
-      position: absolute;
-      top: 0; left: 0;
-      height: 100%;
-      background: rgba(245,158,11,.04);
-      transition: width .4s;
-      pointer-events: none;
-    }
+    .act-progress-bg { position: absolute; top:0; left:0; height:100%; background: rgba(245,158,11,.04); transition: width .4s; pointer-events:none; }
     .act-card.concluida .act-progress-bg { background: rgba(16,185,129,.05); }
 
-    .act-inner {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      position: relative;
-    }
+    .act-inner { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; position: relative; }
     .act-left { flex: 1; min-width: 220px; }
-    .act-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
-      min-width: 190px;
-    }
+    .act-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 190px; }
 
-    .act-num {
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--text3);
-      min-width: 24px;
-    }
-    .act-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .act-meta {
-      font-size: 11px;
-      color: var(--text3);
-      margin: 4px 0 6px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      align-items: center;
-    }
+    .act-num { font-size: 18px; font-weight: 800; color: var(--text3); min-width: 24px; }
+    .act-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .act-meta { font-size: 11px; color: var(--text3); margin: 4px 0 6px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 
-    .badge {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .04em;
-    }
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; }
     .badge-nr12 { background: #1d4ed822; color: #60a5fa; border: 1px solid #3b82f644; }
     .badge-nr10 { background: #dc262622; color: #f87171; border: 1px solid #ef444444; }
     .badge-loto { background: #f9731622; color: #fb923c; border: 1px solid #f9731644; }
 
     .act-obs {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      color: var(--text2);
-      font-size: 12px;
-      font-family: inherit;
-      padding: 5px 8px;
-      resize: none;
-      transition: border-color .15s;
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 5px; color: var(--text2); font-size: 12px; font-family: inherit;
+      padding: 5px 8px; resize: none; transition: border-color .15s;
     }
     .act-obs:focus { outline: none; border-color: var(--accent); }
     .act-obs:disabled { opacity: .5; cursor: not-allowed; }
-
     .act-real { font-size: 11px; color: var(--text3); margin: 3px 0 5px; }
 
-    /* SLIDER ROW */
-    .slider-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-    }
+    .slider-row { display: flex; align-items: center; gap: 8px; width: 100%; }
     .slider-row label { font-size: 11px; color: var(--text2); white-space: nowrap; }
-    .slider-row input[type=range] {
-      flex: 1;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
+    .slider-row input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
     .slider-row input[type=range]:disabled { accent-color: var(--green); cursor: default; }
-    .slider-pct {
-      font-size: 13px;
-      font-weight: 700;
-      min-width: 36px;
-      text-align: right;
-    }
+    .slider-pct { font-size: 13px; font-weight: 700; min-width: 36px; text-align: right; }
 
-    .mini-bar {
-      width: 100%;
-      height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .mini-fill {
-      height: 100%;
-      border-radius: 2px;
-      background: var(--accent);
-      transition: width .3s;
-    }
+    .mini-bar { width: 100%; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .mini-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width .3s; }
     .act-card.concluida .mini-fill { background: var(--green); }
 
-    /* ACTION BUTTONS */
     .act-actions { display: flex; gap: 6px; margin-top: 2px; }
     .btn-iniciar, .btn-concluir, .badge-ok {
-      border: none;
-      border-radius: 5px;
-      padding: 4px 12px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      transition: filter .15s;
+      border: none; border-radius: 5px; padding: 4px 12px;
+      font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; transition: filter .15s;
     }
-    .btn-iniciar { background: rgba(245,158,11,.15); color: var(--accent); border: 1px solid rgba(245,158,11,.35); }
-    .btn-iniciar:hover { filter: brightness(1.2); }
+    .btn-iniciar  { background: rgba(245,158,11,.15); color: var(--accent); border: 1px solid rgba(245,158,11,.35); }
+    .btn-iniciar:hover  { filter: brightness(1.2); }
     .btn-concluir { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.35); }
     .btn-concluir:hover { filter: brightness(1.2); }
     .badge-ok { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.35); cursor: default; }
 
-    /* FOOTER */
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 11px;
-      color: var(--text3);
-      border-top: 1px solid var(--border);
-      margin-top: 20px;
-    }
+    footer { text-align: center; padding: 20px; font-size: 11px; color: var(--text3); border-top: 1px solid var(--border); margin-top: 20px; }
 
     @media (max-width: 600px) {
-      .header { padding: 14px 14px 12px; }
+      .header { padding: 30px 14px 12px; }
       main { padding: 14px; }
-      .header-title-block h1 { font-size: 18px; }
+      h1 { font-size: 18px; }
       .act-right { min-width: 100%; }
     }
   </style>
 </head>
 <body>
 
+<div id="sync-bar" class="conectando">
+  <span class="sync-dot pulse"></span>
+  <span id="sync-msg">Conectando ao banco de dados...</span>
+</div>
+
 <div class="header">
   <div class="header-top">
-    <div class="header-title-block">
-      <div class="label">Manutenção Corretiva</div>
+    <div>
+      <div class="label-top">Manutenção Corretiva</div>
       <h1>Elevador 4 — Açúcar</h1>
       <div class="subtitle" id="periodo"></div>
     </div>
@@ -344,7 +159,10 @@
       </div>
       <button class="btn-pdf" onclick="gerarPDF()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <polyline points="9 15 12 18 15 15"/>
         </svg>
         Emitir Comunicado (PDF)
       </button>
@@ -359,244 +177,291 @@
   </div>
 </div>
 
-<main>
-  <div id="lista"></div>
-</main>
+<main><div id="lista"></div></main>
 
-<footer>
-  Elevador 4 de Açúcar &nbsp;|&nbsp; Gerado em 16/05/2026
-</footer>
+<footer>Elevador 4 de Açúcar &nbsp;|&nbsp; Manutenção Corretiva</footer>
 
-<script>
-const INICIO_MS = new Date("2026-05-16T09:00:00-03:00").getTime();
-const TOTAL_H = 21;
+<script type="module">
+  import { initializeApp }                      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, update }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-const ATIVS = [
-  {id:1, nome:"Lavagem geral e descaracterização de área classificada", dur:1,   nr:["NR-12"]},
-  {id:2, nome:"Desmontar tampa do elevador e descer",                   dur:1,   nr:["NR-12"]},
-  {id:3, nome:"Desligar motor elétrico",                                dur:0.5, nr:["NR-10","LOTO"]},
-  {id:4, nome:"Desacoplar redutor e colocar no chão",                   dur:1,   nr:["NR-12"]},
-  {id:5, nome:"Prender a correia com cantoneira (fixar)",               dur:1,   nr:["NR-12"]},
-  {id:6, nome:"Desacoplar a emenda da correia",                         dur:0.5, nr:["NR-12"]},
-  {id:7, nome:"Retirar o tambor e colocar no chão",                     dur:0.5, nr:["NR-12"]},
-  {id:8, nome:"Trocar segmento de lona (2 emendas)",                    dur:3,   nr:["NR-12"]},
-  {id:9, nome:"Reposicionar tambor no elevador",                        dur:2,   nr:["NR-12"]},
-  {id:10,nome:"Emendar novamente a correia",                            dur:2,   nr:["NR-12"]},
-  {id:11,nome:"Fechar a tampa",                                         dur:0.5, nr:["NR-12"]},
-  {id:12,nome:"Acoplar o motoredutor",                                  dur:1,   nr:["NR-12"]},
-  {id:13,nome:"Refazer braço de torque com caldeiraria",                dur:3,   nr:["NR-12"]},
-  {id:14,nome:"Ligar o motor",                                          dur:1,   nr:["NR-10","LOTO"]},
-  {id:15,nome:"Furar correia e instalar canecas",                       dur:3,   nr:["NR-12"]},
-  {id:16,nome:"Teste operacional",                                      dur:1,   nr:[]},
-];
+  const firebaseConfig = {
+    apiKey:            "AIzaSyASfd4sEHo3sLQIav1mWeMYA6qTeXeYf74",
+    authDomain:        "elevador-4.firebaseapp.com",
+    databaseURL:       "https://elevador-4-default-rtdb.firebaseio.com",
+    projectId:         "elevador-4",
+    storageBucket:     "elevador-4.firebasestorage.app",
+    messagingSenderId: "565787417264",
+    appId:             "1:565787417264:web:0a550d3f6411a3731d3975"
+  };
 
-let cursor = INICIO_MS;
-ATIVS.forEach(a => {
-  a.ini = new Date(cursor);
-  cursor += a.dur * 3600000;
-  a.fim = new Date(cursor);
-});
-const FIM_PREV = new Date(cursor);
+  const app   = initializeApp(firebaseConfig);
+  const db    = getDatabase(app);
+  const dbRef = ref(db, "elevador4/atividades");
 
-const fmtH  = d => d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-const fmtDT = d => d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(",","");
-const fmtDur = h => h === Math.round(h) ? h+"h" : (h+"").replace(".",",")+"h";
+  const INICIO_MS = new Date("2026-05-16T09:00:00-03:00").getTime();
+  const TOTAL_H   = 21;
 
-const NR_BADGE = {
-  "NR-12": '<span class="badge badge-nr12">NR-12</span>',
-  "NR-10": '<span class="badge badge-nr10">NR-10</span>',
-  "LOTO":  '<span class="badge badge-loto">🔒 LOTO</span>',
-};
+  const ATIVS = [
+    {id:1,  nome:"Lavagem geral e descaracterização de área classificada", dur:1,   nr:["NR-12"]},
+    {id:2,  nome:"Desmontar tampa do elevador e descer",                   dur:1,   nr:["NR-12"]},
+    {id:3,  nome:"Desligar motor elétrico",                                dur:0.5, nr:["NR-10","LOTO"]},
+    {id:4,  nome:"Desacoplar redutor e colocar no chão",                   dur:1,   nr:["NR-12"]},
+    {id:5,  nome:"Prender a correia com cantoneira (fixar)",               dur:1,   nr:["NR-12"]},
+    {id:6,  nome:"Desacoplar a emenda da correia",                         dur:0.5, nr:["NR-12"]},
+    {id:7,  nome:"Retirar o tambor e colocar no chão",                     dur:0.5, nr:["NR-12"]},
+    {id:8,  nome:"Trocar segmento de lona (2 emendas)",                    dur:3,   nr:["NR-12"]},
+    {id:9,  nome:"Reposicionar tambor no elevador",                        dur:2,   nr:["NR-12"]},
+    {id:10, nome:"Emendar novamente a correia",                            dur:2,   nr:["NR-12"]},
+    {id:11, nome:"Fechar a tampa",                                         dur:0.5, nr:["NR-12"]},
+    {id:12, nome:"Acoplar o motoredutor",                                  dur:1,   nr:["NR-12"]},
+    {id:13, nome:"Refazer braço de torque com caldeiraria",                dur:3,   nr:["NR-12"]},
+    {id:14, nome:"Ligar o motor",                                          dur:1,   nr:["NR-10","LOTO"]},
+    {id:15, nome:"Furar correia e instalar canecas",                       dur:3,   nr:["NR-12"]},
+    {id:16, nome:"Teste operacional",                                      dur:1,   nr:[]},
+  ];
 
-let state = {};
-ATIVS.forEach(a => {
-  state[a.id] = {pct:0, st:"pendente", obs:"", ini_real:null, fim_real:null};
-});
-
-function calcGeral() {
-  let peso = 0;
-  ATIVS.forEach(a => peso += (state[a.id].pct / 100) * a.dur);
-  return Math.round((peso / TOTAL_H) * 100);
-}
-
-function atualizarStats() {
-  const g = calcGeral();
-  document.getElementById("stat-geral").textContent = g+"%";
-  document.getElementById("stat-ok").textContent  = ATIVS.filter(a=>state[a.id].st==="concluida").length;
-  document.getElementById("stat-and").textContent = ATIVS.filter(a=>state[a.id].st==="andamento").length;
-  document.getElementById("barra-geral").style.width = g+"%";
-  document.getElementById("barra-pct").textContent = g+"%";
-  const col = g >= 80 ? "var(--green)" : "var(--accent)";
-  document.getElementById("stat-geral").style.color = col;
-}
-
-function render() {
-  const lista = document.getElementById("lista");
-  let html = "";
+  let cursor = INICIO_MS;
   ATIVS.forEach(a => {
-    const s = state[a.id];
-    const cls = s.st === "concluida" ? "concluida" : s.st === "andamento" ? "andamento" : "";
-    const badges = a.nr.map(n => NR_BADGE[n]||"").join(" ");
-    const pct = s.pct;
-    const barColor = s.st==="concluida" ? "var(--green)" : "var(--accent)";
-
-    let actBtn = "";
-    if (s.st==="pendente")  actBtn = `<button class="btn-iniciar"  onclick="iniciar(${a.id})">▶ Iniciar</button>`;
-    if (s.st==="andamento") actBtn = `<button class="btn-concluir" onclick="concluir(${a.id})">✔ Concluir</button>`;
-    if (s.st==="concluida") actBtn = `<span class="badge-ok">✔ Concluída</span>`;
-
-    const realInfo = s.ini_real
-      ? `<div class="act-real">⏱ Início real: ${fmtH(s.ini_real)}${s.fim_real?" &nbsp;|&nbsp; Fim real: "+fmtH(s.fim_real):""}</div>`
-      : "";
-
-    html += `
-    <div class="act-card ${cls}" id="card-${a.id}">
-      <div class="act-progress-bg" id="bg-${a.id}" style="width:${pct}%;"></div>
-      <div class="act-inner">
-        <div class="act-left">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <span class="act-num">${String(a.id).padStart(2,"0")}</span>
-            <span class="act-name">${a.nome}</span>
-          </div>
-          <div class="act-meta">
-            <span>${fmtH(a.ini)} → ${fmtH(a.fim)} &nbsp;(${fmtDur(a.dur)})</span>
-            ${badges}
-          </div>
-          ${realInfo}
-          <textarea class="act-obs" rows="1" placeholder="Observações / ocorrências..."
-            ${s.st==="concluida"?"disabled":""}
-            onchange="state[${a.id}].obs=this.value">${s.obs}</textarea>
-        </div>
-        <div class="act-right">
-          <div class="slider-row">
-            <label>Avanço</label>
-            <input type="range" min="0" max="100" step="5" value="${pct}"
-              ${s.st==="concluida"?"disabled":""}
-              oninput="updPct(${a.id},+this.value)">
-            <span class="slider-pct" style="color:${barColor};">${pct}%</span>
-          </div>
-          <div class="mini-bar">
-            <div class="mini-fill" style="width:${pct}%;background:${barColor};"></div>
-          </div>
-          <div class="act-actions">${actBtn}</div>
-        </div>
-      </div>
-    </div>`;
+    a.ini = new Date(cursor);
+    cursor += a.dur * 3600000;
+    a.fim = new Date(cursor);
   });
-  lista.innerHTML = html;
-  atualizarStats();
-}
+  const FIM_PREV = new Date(cursor);
 
-function updPct(id, v) {
-  state[id].pct = v;
-  if (v > 0 && state[id].st==="pendente") state[id].st = "andamento";
-  render();
-}
-function iniciar(id) {
-  state[id].st = "andamento";
-  state[id].ini_real = new Date();
-  if (state[id].pct === 0) state[id].pct = 10;
-  render();
-}
-function concluir(id) {
-  state[id].st = "concluida";
-  state[id].pct = 100;
-  state[id].fim_real = new Date();
-  render();
-}
+  const fmtH   = d => new Date(d).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  const fmtDT  = d => new Date(d).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(",","");
+  const fmtDur = h => h === Math.round(h) ? h+"h" : (h+"").replace(".",",")+"h";
 
-function gerarPDF() {
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert("Aguarde, a biblioteca de PDF ainda está carregando. Tente novamente em alguns segundos.");
-    return;
+  const NR_BADGE = {
+    "NR-12": '<span class="badge badge-nr12">NR-12</span>',
+    "NR-10": '<span class="badge badge-nr10">NR-10</span>',
+    "LOTO":  '<span class="badge badge-loto">🔒 LOTO</span>',
+  };
+
+  let state = {};
+  ATIVS.forEach(a => { state[a.id] = {pct:0, st:"pendente", obs:"", ini_real:null, fim_real:null}; });
+
+  let syncTimer   = null;
+  let fromFirebase = false;
+
+  // ── SYNC BAR ────────────────────────────────────────────────
+  function setSyncBar(tipo, msg) {
+    const bar = document.getElementById("sync-bar");
+    const dot = bar.querySelector(".sync-dot");
+    bar.className = tipo;
+    dot.className = "sync-dot" + (tipo !== "ok" ? " pulse" : "");
+    document.getElementById("sync-msg").textContent = msg;
+    bar.style.opacity = "1";
+    if (tipo === "ok") setTimeout(() => { bar.style.opacity = "0"; }, 2000);
   }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
-  const now = new Date();
-  const g = calcGeral();
-  const ok = ATIVS.filter(a=>state[a.id].st==="concluida").length;
-  const ST = { pendente:"Pendente", andamento:"Em andamento", concluida:"Concluída" };
 
-  // Cabeçalho
-  doc.setFillColor(20,58,92);
-  doc.rect(0, 0, 297, 36, "F");
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(8);
-  doc.text("COMUNICADO PARCIAL DE MANUTENÇÃO", 14, 8);
-  doc.setFontSize(18);
-  doc.setFont(undefined,"bold");
-  doc.text("Elevador 4 — Açúcar", 14, 18);
-  doc.setFont(undefined,"normal");
-  doc.setFontSize(8);
-  doc.text(`Emitido em: ${fmtDT(now)}   |   Início previsto: ${fmtDT(new Date(INICIO_MS))}   |   Término previsto: ${fmtDT(FIM_PREV)}   |   Total: ${TOTAL_H}h`, 14, 25);
-  doc.setFontSize(11);
-  doc.setFont(undefined,"bold");
-  doc.text(`Avanço geral: ${g}%   |   Concluídas: ${ok} de ${ATIVS.length}`, 14, 33);
-  doc.setFont(undefined,"normal");
-
-  // Tabela
-  const body = ATIVS.map(a => {
-    const s = state[a.id];
-    return [
-      String(a.id).padStart(2,"0"),
-      a.nome,
-      fmtDur(a.dur),
-      `${fmtH(a.ini)} – ${fmtH(a.fim)}`,
-      ST[s.st],
-      s.pct+"%",
-      s.ini_real ? fmtH(s.ini_real) : "—",
-      s.fim_real ? fmtH(s.fim_real) : "—",
-      a.nr.join(", ") || "—",
-      s.obs || "—",
-    ];
+  // ── FIREBASE: ESCUTAR MUDANÇAS ───────────────────────────────
+  onValue(dbRef, snap => {
+    const data = snap.val();
+    if (data) {
+      fromFirebase = true;
+      ATIVS.forEach(a => {
+        if (data[a.id]) {
+          const d = data[a.id];
+          state[a.id] = {
+            pct:      d.pct      ?? 0,
+            st:       d.st       ?? "pendente",
+            obs:      d.obs      ?? "",
+            ini_real: d.ini_real ?? null,
+            fim_real: d.fim_real ?? null,
+          };
+        }
+      });
+      fromFirebase = false;
+    }
+    setSyncBar("ok", "Sincronizado ✔");
+    render();
+  }, err => {
+    setSyncBar("erro", "Sem conexão — exibindo dados locais");
+    console.error(err);
   });
 
-  doc.autoTable({
-    startY: 40,
-    head: [["#","Atividade","Dur.","Prev.","Status","Avanço","Ini. real","Fim real","NR / LOTO","Observações"]],
-    body,
-    styles: { fontSize:8, cellPadding:2.5, lineColor:[220,220,220], lineWidth:.2, textColor:[30,30,30] },
-    headStyles: { fillColor:[20,58,92], textColor:255, fontStyle:"bold", fontSize:8 },
-    alternateRowStyles: { fillColor:[245,248,252] },
-    columnStyles: {
-      0:  { cellWidth:8,  halign:"center" },
-      1:  { cellWidth:62 },
-      2:  { cellWidth:10, halign:"center" },
-      3:  { cellWidth:22 },
-      4:  { cellWidth:24 },
-      5:  { cellWidth:14, halign:"center" },
-      6:  { cellWidth:16, halign:"center" },
-      7:  { cellWidth:16, halign:"center" },
-      8:  { cellWidth:20 },
-      9:  { cellWidth:40 },
-    },
-    didParseCell(data) {
-      if (data.section==="body" && data.column.index===4) {
-        const st = state[ATIVS[data.row.index]?.id]?.st;
-        if (st==="concluida")  data.cell.styles.textColor = [10,124,79];
-        else if (st==="andamento") data.cell.styles.textColor = [146,90,10];
-        else data.cell.styles.textColor = [100,100,100];
-      }
-    },
-  });
+  // ── FIREBASE: SALVAR ─────────────────────────────────────────
+  function salvar(id) {
+    if (fromFirebase) return;
+    setSyncBar("salvando", "Salvando...");
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      const s = state[id];
+      const patch = {};
+      patch[`elevador4/atividades/${id}`] = {
+        pct:      s.pct,
+        st:       s.st,
+        obs:      s.obs,
+        ini_real: s.ini_real ? new Date(s.ini_real).getTime() : null,
+        fim_real: s.fim_real ? new Date(s.fim_real).getTime() : null,
+      };
+      update(ref(db), patch)
+        .then(()  => setSyncBar("ok", "Salvo ✔"))
+        .catch(() => setSyncBar("erro", "Falha ao salvar — verifique conexão"));
+    }, 700);
+  }
 
-  const pH = doc.internal.pageSize.getHeight();
-  doc.setFontSize(7);
-  doc.setTextColor(150);
-  doc.text("Documento gerado automaticamente — Elevador 4 de Açúcar", 14, pH-5);
+  // ── STATS ────────────────────────────────────────────────────
+  function calcGeral() {
+    let peso = 0;
+    ATIVS.forEach(a => peso += (state[a.id].pct / 100) * a.dur);
+    return Math.round((peso / TOTAL_H) * 100);
+  }
+  function atualizarStats() {
+    const g = calcGeral();
+    document.getElementById("stat-geral").textContent  = g+"%";
+    document.getElementById("stat-ok").textContent     = ATIVS.filter(a=>state[a.id].st==="concluida").length;
+    document.getElementById("stat-and").textContent    = ATIVS.filter(a=>state[a.id].st==="andamento").length;
+    document.getElementById("barra-geral").style.width = g+"%";
+    document.getElementById("barra-pct").textContent   = g+"%";
+    document.getElementById("stat-geral").style.color  = g >= 80 ? "var(--green)" : "var(--accent)";
+  }
 
-  const nome = `Elevador4_Comunicado_${now.toLocaleDateString("pt-BR").replace(/\//g,"-")}_${fmtH(now).replace(":","h")}.pdf`;
-  doc.save(nome);
-}
+  // ── RENDER ───────────────────────────────────────────────────
+  function render() {
+    let html = "";
+    ATIVS.forEach(a => {
+      const s    = state[a.id];
+      const cls  = s.st==="concluida" ? "concluida" : s.st==="andamento" ? "andamento" : "";
+      const pct  = s.pct;
+      const barC = s.st==="concluida" ? "var(--green)" : "var(--accent)";
+      const bdgs = a.nr.map(n => NR_BADGE[n]||"").join(" ");
 
-// Init
-document.getElementById("periodo").textContent =
-  "Início: " + new Date(INICIO_MS).toLocaleString("pt-BR",{weekday:"long",day:"2-digit",month:"long"}) +
-  " às " + fmtH(new Date(INICIO_MS)) +
-  " — Término previsto: " + fmtH(FIM_PREV) +
-  " (" + FIM_PREV.toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}) + ")";
+      let btn = "";
+      if (s.st==="pendente")  btn = `<button class="btn-iniciar"  onclick="_ini(${a.id})">▶ Iniciar</button>`;
+      if (s.st==="andamento") btn = `<button class="btn-concluir" onclick="_ok(${a.id})">✔ Concluir</button>`;
+      if (s.st==="concluida") btn = `<span class="badge-ok">✔ Concluída</span>`;
 
-render();
+      const real = s.ini_real
+        ? `<div class="act-real">⏱ Início real: ${fmtH(s.ini_real)}${s.fim_real?" &nbsp;|&nbsp; Fim real: "+fmtH(s.fim_real):""}</div>`
+        : "";
+
+      html += `
+      <div class="act-card ${cls}">
+        <div class="act-progress-bg" style="width:${pct}%;"></div>
+        <div class="act-inner">
+          <div class="act-left">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span class="act-num">${String(a.id).padStart(2,"0")}</span>
+              <span class="act-name">${a.nome}</span>
+            </div>
+            <div class="act-meta">
+              <span>${fmtH(a.ini)} → ${fmtH(a.fim)} &nbsp;(${fmtDur(a.dur)})</span>${bdgs}
+            </div>
+            ${real}
+            <textarea class="act-obs" rows="1" placeholder="Observações / ocorrências..."
+              ${s.st==="concluida"?"disabled":""}
+              onchange="_obs(${a.id},this.value)">${s.obs}</textarea>
+          </div>
+          <div class="act-right">
+            <div class="slider-row">
+              <label>Avanço</label>
+              <input type="range" min="0" max="100" step="5" value="${pct}"
+                ${s.st==="concluida"?"disabled":""}
+                oninput="_pct(${a.id},+this.value)">
+              <span class="slider-pct" style="color:${barC};">${pct}%</span>
+            </div>
+            <div class="mini-bar">
+              <div class="mini-fill" style="width:${pct}%;background:${barC};"></div>
+            </div>
+            <div class="act-actions">${btn}</div>
+          </div>
+        </div>
+      </div>`;
+    });
+    document.getElementById("lista").innerHTML = html;
+    atualizarStats();
+  }
+
+  // ── AÇÕES ────────────────────────────────────────────────────
+  window._pct = (id, v) => {
+    state[id].pct = v;
+    if (v > 0 && state[id].st==="pendente") state[id].st = "andamento";
+    salvar(id); render();
+  };
+  window._obs = (id, v) => { state[id].obs = v; salvar(id); };
+  window._ini = (id) => {
+    state[id].st = "andamento";
+    state[id].ini_real = Date.now();
+    if (state[id].pct === 0) state[id].pct = 10;
+    salvar(id); render();
+  };
+  window._ok = (id) => {
+    state[id].st = "concluida";
+    state[id].pct = 100;
+    state[id].fim_real = Date.now();
+    salvar(id); render();
+  };
+
+  // ── PDF ──────────────────────────────────────────────────────
+  window.gerarPDF = () => {
+    if (!window.jspdf?.jsPDF) { alert("Aguarde a biblioteca PDF carregar e tente novamente."); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    const now = new Date();
+    const g   = calcGeral();
+    const ok  = ATIVS.filter(a=>state[a.id].st==="concluida").length;
+    const ST  = {pendente:"Pendente",andamento:"Em andamento",concluida:"Concluída"};
+
+    doc.setFillColor(20,58,92);
+    doc.rect(0,0,297,36,"F");
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(8);
+    doc.text("COMUNICADO PARCIAL DE MANUTENÇÃO",14,8);
+    doc.setFontSize(18); doc.setFont(undefined,"bold");
+    doc.text("Elevador 4 — Açúcar",14,18);
+    doc.setFont(undefined,"normal"); doc.setFontSize(8);
+    doc.text(`Emitido em: ${fmtDT(now)}   |   Início previsto: ${fmtDT(new Date(INICIO_MS))}   |   Término previsto: ${fmtDT(FIM_PREV)}   |   Total: ${TOTAL_H}h`,14,25);
+    doc.setFontSize(11); doc.setFont(undefined,"bold");
+    doc.text(`Avanço geral: ${g}%   |   Concluídas: ${ok} de ${ATIVS.length}`,14,33);
+    doc.setFont(undefined,"normal");
+
+    doc.autoTable({
+      startY: 40,
+      head: [["#","Atividade","Dur.","Prev.","Status","Avanço","Ini. real","Fim real","NR / LOTO","Observações"]],
+      body: ATIVS.map(a => {
+        const s = state[a.id];
+        return [
+          String(a.id).padStart(2,"0"), a.nome, fmtDur(a.dur),
+          `${fmtH(a.ini)} – ${fmtH(a.fim)}`, ST[s.st], s.pct+"%",
+          s.ini_real ? fmtH(s.ini_real) : "—",
+          s.fim_real ? fmtH(s.fim_real) : "—",
+          a.nr.join(", ")||"—", s.obs||"—",
+        ];
+      }),
+      styles:{fontSize:8,cellPadding:2.5,lineColor:[220,220,220],lineWidth:.2,textColor:[30,30,30]},
+      headStyles:{fillColor:[20,58,92],textColor:255,fontStyle:"bold",fontSize:8},
+      alternateRowStyles:{fillColor:[245,248,252]},
+      columnStyles:{
+        0:{cellWidth:8,halign:"center"},1:{cellWidth:62},2:{cellWidth:10,halign:"center"},
+        3:{cellWidth:22},4:{cellWidth:24},5:{cellWidth:14,halign:"center"},
+        6:{cellWidth:16,halign:"center"},7:{cellWidth:16,halign:"center"},
+        8:{cellWidth:20},9:{cellWidth:40},
+      },
+      didParseCell(d) {
+        if (d.section==="body" && d.column.index===4) {
+          const st = state[ATIVS[d.row.index]?.id]?.st;
+          d.cell.styles.textColor = st==="concluida"?[10,124,79]:st==="andamento"?[146,90,10]:[100,100,100];
+        }
+      },
+    });
+
+    const pH = doc.internal.pageSize.getHeight();
+    doc.setFontSize(7); doc.setTextColor(150);
+    doc.text("Documento gerado automaticamente — Elevador 4 de Açúcar", 14, pH-5);
+    doc.save(`Elevador4_Comunicado_${now.toLocaleDateString("pt-BR").replace(/\//g,"-")}_${fmtH(now).replace(":","h")}.pdf`);
+  };
+
+  // ── INIT ─────────────────────────────────────────────────────
+  document.getElementById("periodo").textContent =
+    "Início: " + new Date(INICIO_MS).toLocaleString("pt-BR",{weekday:"long",day:"2-digit",month:"long"}) +
+    " às " + fmtH(INICIO_MS) + " — Término previsto: " + fmtH(FIM_PREV.getTime()) +
+    " (" + FIM_PREV.toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}) + ")";
+
+  setSyncBar("conectando","Conectando ao banco de dados...");
+  render();
 </script>
 </body>
 </html>
