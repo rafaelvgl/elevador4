@@ -808,61 +808,6 @@
   };
 
 
-    doc.setFillColor(20,58,92);
-    doc.rect(0,0,297,40,"F");
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(8);
-    doc.text("COMUNICADO PARCIAL DE MANUTENÇÃO",14,8);
-    doc.setFontSize(18); doc.setFont(undefined,"bold");
-    doc.text("Elevador 4 — Açúcar",14,18);
-    doc.setFont(undefined,"normal"); doc.setFontSize(8);
-    doc.text(`Emitido em: ${fmtDT(now)}   |   Início previsto: ${fmtDT(new Date(INICIO_PREV_MS))}   |   Término original: ${fmtDT(new Date(FIM_ORIGINAL_MS))}   |   Total: ${TOTAL_H}h`,14,25);
-    doc.setFontSize(9);
-    // Término estimado com destaque
-    const deltaMin = Math.round((est - FIM_ORIGINAL_MS) / 60000);
-    const deltaStr = deltaMin > 10 ? `  ⚠ ${fmtMin(deltaMin)} de atraso` : deltaMin < -10 ? `  ✔ ${fmtMin(Math.abs(deltaMin))} adiantado` : "  ✔ no prazo";
-    doc.text(`Término estimado: ${fmtDT(new Date(est))}${deltaStr}`,14,31);
-    doc.setFontSize(11); doc.setFont(undefined,"bold");
-    doc.text(`Avanço geral: ${g}%   |   Concluídas: ${ok} de ${ATIVS.length}`,14,38);
-    doc.setFont(undefined,"normal");
-
-    doc.autoTable({
-      startY: 44,
-      head: [["#","Atividade","Dur.","Prev.","Status","Avanço","Ini. real","Fim real","NR / LOTO","Observações"]],
-      body: ATIVS.map(a => {
-        const s = state[a.id];
-        return [
-          String(a.id).padStart(2,"0"), a.nome, fmtDur(a.dur),
-          `${fmtH(a.ini_prev)} – ${fmtH(a.fim_prev)}`,
-          ST[s.st], s.pct+"%",
-          s.ini_real ? fmtH(s.ini_real) : "—",
-          s.fim_real ? fmtH(s.fim_real) : "—",
-          a.nr.join(", ")||"—", s.obs||"—",
-        ];
-      }),
-      styles:{fontSize:8,cellPadding:2.5,lineColor:[220,220,220],lineWidth:.2,textColor:[30,30,30]},
-      headStyles:{fillColor:[20,58,92],textColor:255,fontStyle:"bold",fontSize:8},
-      alternateRowStyles:{fillColor:[245,248,252]},
-      columnStyles:{
-        0:{cellWidth:8,halign:"center"},1:{cellWidth:60},2:{cellWidth:10,halign:"center"},
-        3:{cellWidth:22},4:{cellWidth:24},5:{cellWidth:14,halign:"center"},
-        6:{cellWidth:16,halign:"center"},7:{cellWidth:16,halign:"center"},
-        8:{cellWidth:20},9:{cellWidth:42},
-      },
-      didParseCell(d) {
-        if (d.section==="body" && d.column.index===4) {
-          const st = state[ATIVS[d.row.index]?.id]?.st;
-          d.cell.styles.textColor = st==="concluida"?[10,124,79]:st==="andamento"?[146,90,10]:[100,100,100];
-        }
-      },
-    });
-
-    const pH = doc.internal.pageSize.getHeight();
-    doc.setFontSize(7); doc.setTextColor(150);
-    doc.text("Documento gerado automaticamente — Elevador 4 de Açúcar", 14, pH-5);
-    doc.save(`Elevador4_Comunicado_${now.toLocaleDateString("pt-BR").replace(/\//g,"-")}_${fmtH(now).replace(":","h")}.pdf`);
-  };
-
   // ── TICK A CADA MINUTO (atualiza término estimado) ────────────
   setInterval(() => { atualizarStats(); }, 60000);
 
