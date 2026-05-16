@@ -144,6 +144,8 @@
     .btn-concluir { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.35); }
     .btn-concluir:hover { filter: brightness(1.2); }
     .badge-ok { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.35); cursor: default; }
+    .btn-desfazer { border: none; border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; transition: filter .15s; background: rgba(239,68,68,.12); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+    .btn-desfazer:hover { filter: brightness(1.2); }
 
     footer { text-align: center; padding: 20px; font-size: 11px; color: var(--text3); border-top: 1px solid var(--border); margin-top: 20px; }
 
@@ -474,7 +476,7 @@
       let btn = "";
       if (s.st==="pendente")  btn = `<button class="btn-iniciar"  onclick="_ini(${a.id})">▶ Iniciar</button>`;
       if (s.st==="andamento") btn = `<button class="btn-concluir" onclick="_ok(${a.id})">✔ Concluir</button>`;
-      if (s.st==="concluida") btn = `<span class="badge-ok">✔ Concluída</span>`;
+      if (s.st==="concluida") btn = `<span class="badge-ok">✔ Concluída</span> <button class="btn-desfazer" onclick="_desfazer(${a.id})">↩ Desfazer</button>`;
 
       const real = s.ini_real
         ? `<div class="act-real">⏱ Início real: ${fmtH(s.ini_real)}${s.fim_real?" &nbsp;|&nbsp; Fim real: "+fmtH(s.fim_real):""}</div>`
@@ -545,17 +547,266 @@
     state[id].fim_real = Date.now();
     salvar(id); render();
   };
+  window._desfazer = (id) => {
+    if (!confirm("Desfazer conclusão desta atividade?")) return;
+    state[id].st = "andamento";
+    state[id].pct = 90;
+    state[id].fim_real = null;
+    salvar(id); render();
+  };
 
-  // ── PDF ───────────────────────────────────────────────────────
+
+  // ── PDF GANTT ─────────────────────────────────────────────────
   window.gerarPDF = () => {
     if (!window.jspdf?.jsPDF) { alert("Aguarde a biblioteca PDF carregar."); return; }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    const PW = 297, PH = 210;
     const now = new Date();
     const g   = calcGeral();
     const ok  = ATIVS.filter(a=>state[a.id].st==="concluida").length;
     const est = calcTerminoEstimado();
-    const ST  = {pendente:"Pendente",andamento:"Em andamento",concluida:"Concluída"};
+    const deltaMin = Math.round((est - FIM_ORIGINAL_MS) / 60000);
+    const deltaStr = deltaMin > 10 ? `⚠ ${fmtMin(deltaMin)} de atraso` : deltaMin < -10 ? `✔ ${fmtMin(Math.abs(deltaMin))} adiantado` : "✔ no prazo";
+
+    // CABEÇALHO
+    doc.setFillColor(20,58,92);
+    doc.rect(0,0,PW,26,"F");
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(6.5); doc.setFont(undefined,"normal");
+    doc.text("COMUNICADO PARCIAL DE MANUTENÇÃO — GRÁFICO DE GANTT", 10, 7);
+    doc.setFontSize(15); doc.setFont(undefined,"bold");
+    doc.text("Elevador 4 — Açúcar", 10, 15);
+    doc.setFont(undefined,"normal"); doc.setFontSize(6.5);
+    doc.text(`Emitido: ${fmtDT(now)}   |   Início: ${fmtDT(new Date(INICIO_PREV_MS))}   |   Término orig.: ${fmtDT(new Date(FIM_ORIGINAL_MS))}   |   Término est.: ${fmtDT(new Date(est))}   |   ${deltaStr}`, 10, 21);
+    doc.setFontSize(7.5); doc.setFont(undefined,"bold");
+    doc.text(`Avanço: ${g}%   |   Concluídas: ${ok}/${ATIVS.length}`, PW-10, 15, {align:"right"});
+
+    // LAYOUT
+    const TOP    = 29;
+    const LEFT_W = 90;
+    const CHART_X = LEFT_W + 1;
+    const CHART_W = PW - CHART_X - 3;
+    const ROW_H  = 9.8;
+    const HDR_H  = 6.5;
+
+    const axisEnd = Math.max(FIM_ORIGINAL_MS, est) + 3600000;
+    const axisMs  = axisEnd - INICIO_PREV_MS;
+    const tsToX   = ts => CHART_X + ((ts - INICIO_PREV_MS) / axisMs) * CHART_W;
+
+    // FUNDO
+    doc.setFillColor(248,250,252);
+    doc.rect(CHART_X, TOP, CHART_W, HDR_H + ATIVS.length * ROW_H, "F");
+
+    // TICKS DE HORA
+    const ticks = [];
+    let tt = Math.ceil(INICIO_PREV_MS / 3600000) * 3600000;
+    while (tt <= axisEnd + 3600000) { ticks.push(tt); tt += 3600000; }
+
+    // Linhas verticais
+    doc.setDrawColor(210,218,230); doc.setLineWidth(0.12);
+    ticks.forEach(ts => {
+      const x = tsToX(ts);
+      if (x >= CHART_X && x <= CHART_X + CHART_W)
+        doc.line(x, TOP + HDR_H, x, TOP + HDR_H + ATIVS.length * ROW_H);
+    });
+
+    // Cabeçalho de horas
+    doc.setFillColor(25,75,130);
+    doc.rect(CHART_X, TOP, CHART_W, HDR_H, "F");
+    doc.setTextColor(255,255,255); doc.setFontSize(5); doc.setFont(undefined,"bold");
+    ticks.forEach(ts => {
+      const x = tsToX(ts);
+      if (x >= CHART_X + 1 && x <= CHART_X + CHART_W - 3) {
+        const d = new Date(ts);
+        const lbl = d.getHours() === 0
+          ? d.toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit"})+" "+fmtH(ts)
+          : fmtH(ts);
+        doc.text(lbl, x + 0.5, TOP + HDR_H - 1.2);
+      }
+    });
+
+    // Linha AGORA
+    const ax = tsToX(Date.now());
+    if (ax >= CHART_X && ax <= CHART_X + CHART_W) {
+      doc.setDrawColor(239,68,68); doc.setLineWidth(0.6);
+      doc.line(ax, TOP + HDR_H, ax, TOP + HDR_H + ATIVS.length * ROW_H);
+      doc.setFontSize(4.5); doc.setTextColor(239,68,68);
+      doc.text("agora", ax + 0.5, TOP + HDR_H + 3.5);
+    }
+
+    // Linha término ORIGINAL
+    const ox = tsToX(FIM_ORIGINAL_MS);
+    if (ox >= CHART_X && ox <= CHART_X + CHART_W) {
+      doc.setDrawColor(100,116,139); doc.setLineWidth(0.35);
+      doc.setLineDashPattern([1.5,0.8],0);
+      doc.line(ox, TOP, ox, TOP + HDR_H + ATIVS.length * ROW_H);
+      doc.setLineDashPattern([],0);
+      doc.setFontSize(4.5); doc.setTextColor(100,116,139);
+      doc.text("orig.", ox + 0.5, TOP + 4);
+    }
+
+    // Linha término ESTIMADO
+    if (Math.abs(deltaMin) > 5) {
+      const ex = tsToX(est);
+      if (ex >= CHART_X && ex <= CHART_X + CHART_W) {
+        doc.setDrawColor(245,158,11); doc.setLineWidth(0.5);
+        doc.setLineDashPattern([2,0.8],0);
+        doc.line(ex, TOP, ex, TOP + HDR_H + ATIVS.length * ROW_H);
+        doc.setLineDashPattern([],0);
+        doc.setFontSize(4.5); doc.setTextColor(180,110,0);
+        doc.text("est.", ex + 0.5, TOP + 4);
+      }
+    }
+
+    // CABEÇALHO ESQUERDO
+    doc.setFillColor(25,75,130);
+    doc.rect(0, TOP, LEFT_W, HDR_H, "F");
+    doc.setTextColor(255,255,255); doc.setFontSize(6); doc.setFont(undefined,"bold");
+    doc.text("#", 2.5, TOP + HDR_H - 1.5);
+    doc.text("Atividade", 8.5, TOP + HDR_H - 1.5);
+    doc.text("Dur.", LEFT_W - 21, TOP + HDR_H - 1.5);
+    doc.text("Status", LEFT_W - 1, TOP + HDR_H - 1.5, {align:"right"});
+
+    // LINHAS DAS ATIVIDADES
+    ATIVS.forEach((a, i) => {
+      const s  = state[a.id];
+      const y  = TOP + HDR_H + i * ROW_H;
+      const cy = y + ROW_H / 2 + 1.8;
+
+      // Fundo alternado
+      if (i % 2 === 1) {
+        doc.setFillColor(237,242,250);
+        doc.rect(0, y, LEFT_W, ROW_H, "F");
+        doc.rect(CHART_X, y, CHART_W, ROW_H, "F");
+      }
+
+      // Separador
+      doc.setDrawColor(215,225,238); doc.setLineWidth(0.1);
+      doc.line(0, y + ROW_H, PW, y + ROW_H);
+
+      // Número
+      doc.setTextColor(120,130,150); doc.setFontSize(5.8); doc.setFont(undefined,"bold");
+      doc.text(String(a.id).padStart(2,"0"), 2, cy);
+
+      // Nome (truncado)
+      doc.setTextColor(15,25,45); doc.setFont(undefined,"normal"); doc.setFontSize(6);
+      const MAX = 36;
+      const nm = a.nome.length > MAX ? a.nome.substring(0,MAX)+"…" : a.nome;
+      doc.text(nm, 8.5, cy);
+
+      // Duração
+      doc.setTextColor(80,95,115); doc.setFontSize(5.8);
+      doc.text(fmtDur(a.dur), LEFT_W - 21, cy);
+
+      // Status
+      const stC = s.st==="concluida"?[10,120,75]:s.st==="andamento"?[150,95,10]:[100,105,115];
+      doc.setTextColor(...stC); doc.setFontSize(5.5); doc.setFont(undefined,"bold");
+      const stLbl = s.st==="concluida"?"Concluída":s.st==="andamento"?"Andamento":"Pendente";
+      doc.text(stLbl, LEFT_W - 1, cy, {align:"right"});
+
+      // BARRA PLANEJADA
+      const bY  = y + 2.2;
+      const bH  = ROW_H - 4.5;
+      const xI  = tsToX(a.ini_prev.getTime());
+      const xF  = tsToX(a.fim_prev.getTime());
+      const bW  = Math.max(xF - xI, 0.8);
+
+      doc.setFillColor(185,200,220);
+      doc.roundedRect(xI, bY, bW, bH, 0.8, 0.8, "F");
+
+      // BARRA DE PROGRESSO
+      const fw = bW * (s.pct / 100);
+      if (fw > 0.3) {
+        if (s.st==="concluida")      doc.setFillColor(16,185,129);
+        else if(s.st==="andamento")  doc.setFillColor(245,158,11);
+        else                         doc.setFillColor(148,163,184);
+        doc.roundedRect(xI, bY, fw, bH, 0.8, 0.8, "F");
+      }
+
+      // Borda barra
+      doc.setDrawColor(145,160,185); doc.setLineWidth(0.12);
+      doc.roundedRect(xI, bY, bW, bH, 0.8, 0.8, "S");
+
+      // % dentro da barra
+      if (bW > 9) {
+        doc.setTextColor(255,255,255); doc.setFontSize(5); doc.setFont(undefined,"bold");
+        doc.text(`${s.pct}%`, xI + Math.min(fw, bW)/2, bY + bH/2 + 1.5, {align:"center"});
+      }
+
+      // BARRA REAL (execução efetiva)
+      if (s.ini_real) {
+        const xR1 = tsToX(s.ini_real);
+        const xR2 = s.fim_real ? tsToX(s.fim_real) : tsToX(Date.now());
+        const rw  = Math.max(xR2 - xR1, 0.5);
+        doc.setDrawColor(20,58,140); doc.setLineWidth(0.9);
+        doc.line(xR1, y + ROW_H - 1.3, xR1 + rw, y + ROW_H - 1.3);
+        doc.setFillColor(20,58,140);
+        doc.circle(xR1, y + ROW_H - 1.3, 0.55, "F");
+        if (s.fim_real) doc.circle(xR1 + rw, y + ROW_H - 1.3, 0.55, "F");
+      }
+
+      // NR labels após barra
+      if (a.nr.length && xF + 1.5 < CHART_X + CHART_W - 4) {
+        doc.setTextColor(80,130,200); doc.setFontSize(4.5); doc.setFont(undefined,"normal");
+        doc.text(a.nr.join(" "), xF + 1.5, bY + bH/2 + 1.5);
+      }
+    });
+
+    // BORDAS
+    doc.setDrawColor(155,170,195); doc.setLineWidth(0.2);
+    doc.rect(0, TOP, LEFT_W, HDR_H + ATIVS.length * ROW_H, "S");
+    doc.rect(CHART_X, TOP, CHART_W, HDR_H + ATIVS.length * ROW_H, "S");
+
+    // LEGENDA
+    const legY = TOP + HDR_H + ATIVS.length * ROW_H + 3.5;
+    doc.setFontSize(5.5); doc.setFont(undefined,"normal");
+    const leg = [
+      {fill:[185,200,220], txt:"Planejado"},
+      {fill:[16,185,129],  txt:"Concluído"},
+      {fill:[245,158,11],  txt:"Em andamento"},
+      {fill:[148,163,184], txt:"Pendente"},
+    ];
+    let lx = 8;
+    leg.forEach(it => {
+      doc.setFillColor(...it.fill);
+      doc.roundedRect(lx, legY, 5, 2.8, 0.5, 0.5, "F");
+      doc.setTextColor(50,60,80);
+      doc.text(it.txt, lx + 6.2, legY + 2.2);
+      lx += 28;
+    });
+    // Execução real
+    doc.setDrawColor(20,58,140); doc.setLineWidth(0.9);
+    doc.line(lx, legY+1.4, lx+5, legY+1.4);
+    doc.setFillColor(20,58,140); doc.circle(lx,legY+1.4,0.5,"F"); doc.circle(lx+5,legY+1.4,0.5,"F");
+    doc.setTextColor(50,60,80); doc.text("Exec. real", lx+6.2, legY+2.2);
+    lx += 28;
+    doc.setDrawColor(239,68,68); doc.setLineWidth(0.5);
+    doc.line(lx, legY+1.4, lx+5, legY+1.4);
+    doc.setTextColor(180,50,50); doc.text("Agora", lx+6.2, legY+2.2);
+    lx += 22;
+    doc.setDrawColor(100,116,139); doc.setLineWidth(0.35);
+    doc.setLineDashPattern([1.5,0.8],0);
+    doc.line(lx, legY+1.4, lx+5, legY+1.4);
+    doc.setLineDashPattern([],0);
+    doc.setTextColor(100,116,139); doc.text("Término orig.", lx+6.2, legY+2.2);
+    if (Math.abs(deltaMin) > 5) {
+      lx += 30;
+      doc.setDrawColor(245,158,11); doc.setLineWidth(0.5);
+      doc.setLineDashPattern([2,0.8],0);
+      doc.line(lx, legY+1.4, lx+5, legY+1.4);
+      doc.setLineDashPattern([],0);
+      doc.setTextColor(180,110,0); doc.text("Término est.", lx+6.2, legY+2.2);
+    }
+
+    // RODAPÉ
+    doc.setFontSize(5.5); doc.setTextColor(160); doc.setFont(undefined,"normal");
+    doc.text("Documento gerado automaticamente — Elevador 4 de Açúcar", 10, PH-3);
+    doc.text("Página 1", PW-10, PH-3, {align:"right"});
+
+    doc.save(`Elevador4_Gantt_${now.toLocaleDateString("pt-BR").replace(/\//g,"-")}_${fmtH(now).replace(":","h")}.pdf`);
+  };
+
 
     doc.setFillColor(20,58,92);
     doc.rect(0,0,297,40,"F");
