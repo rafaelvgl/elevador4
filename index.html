@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Elevador 4 — Açúcar | Usina Leal</title>
+  <title>Elevador 4 — Açúcar | Manutenção Corretiva</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
@@ -319,7 +319,7 @@
 <div class="header">
   <div class="header-top">
     <div class="header-title-block">
-      <div class="label">Usina Leal — Manutenção Corretiva</div>
+      <div class="label">Manutenção Corretiva</div>
       <h1>Elevador 4 — Açúcar</h1>
       <div class="subtitle" id="periodo"></div>
     </div>
@@ -364,7 +364,7 @@
 </main>
 
 <footer>
-  Usina Leal — Elevador 4 de Açúcar &nbsp;|&nbsp; Gerado em 16/05/2026
+  Elevador 4 de Açúcar &nbsp;|&nbsp; Gerado em 16/05/2026
 </footer>
 
 <script>
@@ -583,7 +583,7 @@ function gerarPDF() {
   const pH = doc.internal.pageSize.getHeight();
   doc.setFontSize(7);
   doc.setTextColor(150);
-  doc.text("Documento gerado automaticamente — Usina Leal / Elevador 4 de Açúcar", 14, pH-5);
+  doc.text("Documento gerado automaticamente — Elevador 4 de Açúcar", 14, pH-5);
 
   const nome = `Elevador4_Comunicado_${now.toLocaleDateString("pt-BR").replace(/\//g,"-")}_${fmtH(now).replace(":","h")}.pdf`;
   doc.save(nome);
