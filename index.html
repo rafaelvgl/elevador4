@@ -761,7 +761,7 @@
         const xR2 = s.fim_real ? tsToX(s.fim_real) : tsToX(Date.now());
         const rw  = Math.max(xR2 - xR1, 0.5);
         doc.setDrawColor(20,58,140); doc.setLineWidth(0.9);
-        doc.line(xR1, y + ROW_H_BASE - 1.3, xR1 + rw, y + ROW_H - 1.3);
+        doc.line(xR1, y + ROW_H_BASE - 1.3, xR1 + rw, y + ROW_H_BASE - 1.3);
         doc.setFillColor(20,58,140);
         doc.circle(xR1, y + ROW_H_BASE - 1.3, 0.55, "F");
         if (s.fim_real) doc.circle(xR1 + rw, y + ROW_H_BASE - 1.3, 0.55, "F");
