@@ -587,8 +587,19 @@
     const LEFT_W = 90;
     const CHART_X = LEFT_W + 1;
     const CHART_W = PW - CHART_X - 3;
-    const ROW_H  = 9.8;
+    const ROW_H_BASE = 9.8;   // altura base por linha
+    const OBS_H  = 4.0;       // altura extra se tiver observação
     const HDR_H  = 6.5;
+
+    // Altura de cada linha (maior se tiver observação)
+    const rowH = id => (state[id].obs && state[id].obs.trim()) ? ROW_H_BASE + OBS_H : ROW_H_BASE;
+    // Y acumulado de cada atividade
+    const rowY = (() => {
+      const ys = []; let acc = 0;
+      ATIVS.forEach(a => { ys.push(acc); acc += rowH(a.id); });
+      return ys;
+    })();
+    const totalRowsH = ATIVS.reduce((s,a) => s + rowH(a.id), 0);
 
     const axisEnd = Math.max(FIM_ORIGINAL_MS, est) + 3600000;
     const axisMs  = axisEnd - INICIO_PREV_MS;
@@ -596,7 +607,7 @@
 
     // FUNDO
     doc.setFillColor(248,250,252);
-    doc.rect(CHART_X, TOP, CHART_W, HDR_H + ATIVS.length * ROW_H, "F");
+    doc.rect(CHART_X, TOP, CHART_W, HDR_H + totalRowsH, "F");
 
     // TICKS DE HORA
     const ticks = [];
@@ -608,7 +619,7 @@
     ticks.forEach(ts => {
       const x = tsToX(ts);
       if (x >= CHART_X && x <= CHART_X + CHART_W)
-        doc.line(x, TOP + HDR_H, x, TOP + HDR_H + ATIVS.length * ROW_H);
+        doc.line(x, TOP + HDR_H, x, TOP + HDR_H + totalRowsH);
     });
 
     // Cabeçalho de horas
@@ -630,7 +641,7 @@
     const ax = tsToX(Date.now());
     if (ax >= CHART_X && ax <= CHART_X + CHART_W) {
       doc.setDrawColor(239,68,68); doc.setLineWidth(0.6);
-      doc.line(ax, TOP + HDR_H, ax, TOP + HDR_H + ATIVS.length * ROW_H);
+      doc.line(ax, TOP + HDR_H, ax, TOP + HDR_H + totalRowsH);
       doc.setFontSize(4.5); doc.setTextColor(239,68,68);
       doc.text("agora", ax + 0.5, TOP + HDR_H + 3.5);
     }
@@ -640,7 +651,7 @@
     if (ox >= CHART_X && ox <= CHART_X + CHART_W) {
       doc.setDrawColor(100,116,139); doc.setLineWidth(0.35);
       doc.setLineDashPattern([1.5,0.8],0);
-      doc.line(ox, TOP, ox, TOP + HDR_H + ATIVS.length * ROW_H);
+      doc.line(ox, TOP, ox, TOP + HDR_H + totalRowsH);
       doc.setLineDashPattern([],0);
       doc.setFontSize(4.5); doc.setTextColor(100,116,139);
       doc.text("orig.", ox + 0.5, TOP + 4);
@@ -652,7 +663,7 @@
       if (ex >= CHART_X && ex <= CHART_X + CHART_W) {
         doc.setDrawColor(245,158,11); doc.setLineWidth(0.5);
         doc.setLineDashPattern([2,0.8],0);
-        doc.line(ex, TOP, ex, TOP + HDR_H + ATIVS.length * ROW_H);
+        doc.line(ex, TOP, ex, TOP + HDR_H + totalRowsH);
         doc.setLineDashPattern([],0);
         doc.setFontSize(4.5); doc.setTextColor(180,110,0);
         doc.text("est.", ex + 0.5, TOP + 4);
@@ -671,19 +682,20 @@
     // LINHAS DAS ATIVIDADES
     ATIVS.forEach((a, i) => {
       const s  = state[a.id];
-      const y  = TOP + HDR_H + i * ROW_H;
-      const cy = y + ROW_H / 2 + 1.8;
+      const rh = rowH(a.id);
+      const y  = TOP + HDR_H + rowY[i];
+      const cy = y + ROW_H_BASE / 2 + 1.8;
 
       // Fundo alternado
       if (i % 2 === 1) {
         doc.setFillColor(237,242,250);
-        doc.rect(0, y, LEFT_W, ROW_H, "F");
-        doc.rect(CHART_X, y, CHART_W, ROW_H, "F");
+        doc.rect(0, y, LEFT_W, rh, "F");
+        doc.rect(CHART_X, y, CHART_W, rh, "F");
       }
 
       // Separador
       doc.setDrawColor(215,225,238); doc.setLineWidth(0.1);
-      doc.line(0, y + ROW_H, PW, y + ROW_H);
+      doc.line(0, y + rh, PW, y + rh);
 
       // Número
       doc.setTextColor(120,130,150); doc.setFontSize(5.8); doc.setFont(undefined,"bold");
@@ -705,9 +717,18 @@
       const stLbl = s.st==="concluida"?"Concluída":s.st==="andamento"?"Andamento":"Pendente";
       doc.text(stLbl, LEFT_W - 1, cy, {align:"right"});
 
+      // Observação (abaixo do nome, se houver)
+      if (s.obs && s.obs.trim()) {
+        const obsMaxLen = 68;
+        const obsStr = s.obs.trim().length > obsMaxLen ? s.obs.trim().substring(0, obsMaxLen)+"…" : s.obs.trim();
+        doc.setTextColor(120,80,0); doc.setFontSize(5.2); doc.setFont(undefined,"italic");
+        doc.text("Obs.: " + obsStr, 8.5, y + ROW_H_BASE + 1.5);
+        doc.setFont(undefined,"normal");
+      }
+
       // BARRA PLANEJADA
       const bY  = y + 2.2;
-      const bH  = ROW_H - 4.5;
+      const bH  = ROW_H_BASE - 4.5;
       const xI  = tsToX(a.ini_prev.getTime());
       const xF  = tsToX(a.fim_prev.getTime());
       const bW  = Math.max(xF - xI, 0.8);
@@ -740,10 +761,10 @@
         const xR2 = s.fim_real ? tsToX(s.fim_real) : tsToX(Date.now());
         const rw  = Math.max(xR2 - xR1, 0.5);
         doc.setDrawColor(20,58,140); doc.setLineWidth(0.9);
-        doc.line(xR1, y + ROW_H - 1.3, xR1 + rw, y + ROW_H - 1.3);
+        doc.line(xR1, y + ROW_H_BASE - 1.3, xR1 + rw, y + ROW_H - 1.3);
         doc.setFillColor(20,58,140);
-        doc.circle(xR1, y + ROW_H - 1.3, 0.55, "F");
-        if (s.fim_real) doc.circle(xR1 + rw, y + ROW_H - 1.3, 0.55, "F");
+        doc.circle(xR1, y + ROW_H_BASE - 1.3, 0.55, "F");
+        if (s.fim_real) doc.circle(xR1 + rw, y + ROW_H_BASE - 1.3, 0.55, "F");
       }
 
       // NR labels após barra
@@ -755,11 +776,11 @@
 
     // BORDAS
     doc.setDrawColor(155,170,195); doc.setLineWidth(0.2);
-    doc.rect(0, TOP, LEFT_W, HDR_H + ATIVS.length * ROW_H, "S");
-    doc.rect(CHART_X, TOP, CHART_W, HDR_H + ATIVS.length * ROW_H, "S");
+    doc.rect(0, TOP, LEFT_W, HDR_H + totalRowsH, "S");
+    doc.rect(CHART_X, TOP, CHART_W, HDR_H + totalRowsH, "S");
 
     // LEGENDA
-    const legY = TOP + HDR_H + ATIVS.length * ROW_H + 3.5;
+    const legY = TOP + HDR_H + totalRowsH + 3.5;
     doc.setFontSize(5.5); doc.setFont(undefined,"normal");
     const leg = [
       {fill:[185,200,220], txt:"Planejado"},
